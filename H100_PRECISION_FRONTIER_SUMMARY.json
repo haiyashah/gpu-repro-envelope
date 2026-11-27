@@ -1,0 +1,62 @@
+{
+  "study": "Precision Frontier H100 paired pilot",
+  "gpu": "NVIDIA H100 PCIe (80 GB)",
+  "driver_version": "570.195.03",
+  "cuda_runtime": "12.8",
+  "pytorch": "2.11.0+cu128",
+  "task": "Synthetic concentric-rings classification with an intentionally boundary-dense radial stress set",
+  "protocol": {
+    "seeds": 12,
+    "modes": ["fp32", "tf32", "bf16"],
+    "steps_per_run": 500,
+    "runs": 36,
+    "training_examples_per_seed": 4096,
+    "ordinary_test_examples_per_seed": 2048,
+    "stress_examples_per_seed": 51328,
+    "batch_size": 128,
+    "matched_within_seed": ["generated data", "initial weights", "minibatch order"],
+    "checkpoint_steps": [0, 100, 200, 300, 400, 500]
+  },
+  "ordinary_test": {
+    "mean_accuracy_all_modes": 0.996216,
+    "accuracy_range_all_modes": [0.99267578125, 0.99853515625],
+    "median_prediction_flip_rate_vs_fp32": {
+      "tf32": 0.0,
+      "bf16": 0.0
+    }
+  },
+  "paired_final_comparison": {
+    "tf32": {
+      "seeds": 12,
+      "stress_prediction_flips_total": 118,
+      "median_stress_prediction_flip_rate": 0.00018508416542317718,
+      "median_parameter_l2_delta": 0.005545094647692697,
+      "median_ordinary_test_logit_rms_delta": 0.004708714764155954,
+      "stress_flip_rate_by_fp32_absolute_logit_margin": [
+        {"interval": "[0, 0.005)", "flips": 104, "examples": 406, "rate": 0.2561576354679803},
+        {"interval": "[0.005, 0.01)", "flips": 12, "examples": 338, "rate": 0.03550295857988166},
+        {"interval": "[0.01, 0.025)", "flips": 2, "examples": 1083, "rate": 0.0018467220683287165},
+        {"interval": "[0.025, 0.05)", "flips": 0, "examples": 1907, "rate": 0.0},
+        {"interval": "[0.05, 0.1)", "flips": 0, "examples": 3684, "rate": 0.0},
+        {"interval": "[0.1, infinity)", "flips": 0, "examples": 608518, "rate": 0.0}
+      ]
+    },
+    "bf16": {
+      "seeds": 12,
+      "stress_prediction_flips_total": 2241,
+      "median_stress_prediction_flip_rate": 0.003136689541861415,
+      "median_parameter_l2_delta": 0.0341334986305832,
+      "median_ordinary_test_logit_rms_delta": 0.0392994775413129,
+      "stress_flip_rate_by_fp32_absolute_logit_margin": [
+        {"interval": "[0, 0.005)", "flips": 206, "examples": 406, "rate": 0.5073891625615764},
+        {"interval": "[0.005, 0.01)", "flips": 167, "examples": 338, "rate": 0.4940828402366864},
+        {"interval": "[0.01, 0.025)", "flips": 435, "examples": 1083, "rate": 0.40166204986149584},
+        {"interval": "[0.025, 0.05)", "flips": 574, "examples": 1907, "rate": 0.30099632931305714},
+        {"interval": "[0.05, 0.1)", "flips": 571, "examples": 3684, "rate": 0.15499457111834963},
+        {"interval": "[0.1, infinity)", "flips": 288, "examples": 608518, "rate": 0.00047328098757966076}
+      ]
+    }
+  },
+  "interpretation": "Descriptive result for one GPU and one synthetic task. The stress set deliberately oversamples the decision boundary. Seeds are experimental units; examples within a seed are correlated. Do not interpret the stress-set rates as production error rates or a general property of BF16.",
+  "raw_artifacts": "Per-run JSON logs and paired checkpoint tensors were generated on the H100 but are not included here. The benchmark scripts are the reproducible source for reruns."
+}
