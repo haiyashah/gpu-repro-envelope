@@ -42,10 +42,10 @@ The practical follow-up is to test across more prompts and longer contexts, repe
 
 This was 48 short WikiText examples and 12 short prompts on one H100, using one 0.5B model and one software stack. It is an exploratory pilot, not evidence that the result generalizes to other models, serving stacks, GPUs, or production requests. The BF16 perplexity difference is descriptive for this sample. The threshold is in raw logit units and may not transfer across models or tokenizers. The decode loop was serial, with no warmup protocol or repeated timing trials, so tokens/sec is especially provisional.
 
-Re-run using the script at [`../bench/llm_precision_audit.py`](../bench/llm_precision_audit.py). Example command:
+Re-run using the script at [`../llm_precision_audit.py`](../llm_precision_audit.py). Example command:
 
 ```bash
-python bench/llm_precision_audit.py \
+python llm_precision_audit.py \
   --output runs/h100_qwen_precision.json \
   --examples 48 --prompts 12 --context-tokens 128 --new-tokens 32 \
   --thresholds 0.02 0.05 0.1 --require-h100
