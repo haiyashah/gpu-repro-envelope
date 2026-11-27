@@ -12,7 +12,7 @@ The scope is deliberately small: a synthetic nonlinear classification task and a
 
 This repository now contains two separate single-GPU pilots, not a cross-GPU result.
 
-- On an A40, three fresh processes trained the same seed-7 FP32 workload for 500 steps. Their final parameter SHA-256 matched, and each reached 99.3164% test accuracy and 0.0149633 test loss. See [the A40 pilot record](experiments/PILOT_RESULTS.md).
+- On an A40, three fresh processes trained the same seed-7 FP32 workload for 500 steps. Their final parameter SHA-256 matched, and each reached 99.3164% test accuracy and 0.0149633 test loss. See [the A40 pilot record](PILOT_RESULTS.md).
 - On an H100, 12 matched seeds were trained for 500 steps in FP32, TF32, and BF16. Mean ordinary test accuracy was 99.62% in all modes, while disagreements on an intentionally boundary-dense stress set were concentrated among low-FP32-margin examples. See the [H100 result report](H100_PRECISION_FRONTIER_REPORT.md), [machine-readable summary](H100_PRECISION_FRONTIER_SUMMARY.json), and [fixed protocol](experiments/PRECISION_FRONTIER_PROTOCOL.md).
 
 The H100 result is descriptive for one synthetic task. Its stress set deliberately oversamples a constructed boundary, so its disagreement rates are not production error estimates. Existing work studies numerical sensitivity and precision-related output divergence; this repository does not claim a new phenomenon or an established literature gap.
@@ -61,3 +61,4 @@ When algorithm-level nondeterminism is disabled, does moving a fixed training pr
 ## Scope limits
 
 A small pilot can establish reproducible examples and estimate feasibility. It cannot establish how often GPU training results change in the wider literature. Divergent weights alone do not mean meaningful model behavior changed; prediction agreement and task metrics are reported separately.
+  
