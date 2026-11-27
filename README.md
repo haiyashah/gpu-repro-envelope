@@ -62,3 +62,8 @@ When algorithm-level nondeterminism is disabled, does moving a fixed training pr
 
 A small pilot can establish reproducible examples and estimate feasibility. It cannot establish how often GPU training results change in the wider literature. Divergent weights alone do not mean meaningful model behavior changed; prediction agreement and task metrics are reported separately.
   
+
+
+## Additional pilot: pretrained LLM inference (Nov 27, 2026)
+
+A separate H100 run measured Qwen2.5-0.5B on 48 WikiText examples and 12 short greedy prompts. Selective FP32 vocabulary-head recomputation at 17/384 token positions increased token agreement with FP32 from 62.24% to 74.48%, but exact continuation agreement remained 5/12 and the short timing showed no speedup. This is an exploratory result, not a production claim. See the [pilot report](experiments/H100_QWEN_PRECISION_PILOT.md), [aggregate results](experiments/H100_QWEN_PRECISION_RESULTS.json), and [benchmark script](llm_precision_audit.py).
