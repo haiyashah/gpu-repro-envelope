@@ -1,0 +1,45 @@
+{
+  "study": "H100 Qwen2.5-0.5B precision and selective vocabulary-head pilot",
+  "status": "exploratory single-run aggregate; not a production benchmark",
+  "model": "Qwen/Qwen2.5-0.5B",
+  "dataset": "Salesforce/wikitext:wikitext-2-raw-v1:test",
+  "hardware": {
+    "gpu": "NVIDIA H100 80GB HBM3",
+    "compute_capability": "9.0",
+    "driver": "580.196.07",
+    "cuda": "13.2",
+    "pytorch": "2.15.0+cu132",
+    "transformers": "5.24.1",
+    "datasets": "5.2.0"
+  },
+  "source_sha256": "384a0b3fe16edbe6eaba076eb169b6945e846f9fe3ad67678d04f021f0d73e46",
+  "procedure": {
+    "examples": 48,
+    "prompts": 12,
+    "context_tokens_max": 128,
+    "new_tokens_max": 32,
+    "scored_next_tokens": 4682,
+    "actual_generated_tokens_per_arm": 384,
+    "thresholds_raw_logit_margin": [0.02, 0.05, 0.1],
+    "attention": "eager",
+    "decoding": "greedy",
+    "deterministic_algorithms": true,
+    "selective_fallback": "BF16 transformer body; recompute full vocabulary lm_head in FP32 at positions where BF16 top-two logit margin <= threshold"
+  },
+  "next_token_metrics": {
+    "fp32": {"tokens": 4682, "mean_nll": 3.2435007205329254, "perplexity": 25.62326431274414},
+    "tf32": {"tokens": 4682, "mean_nll": 3.2435496711975382, "perplexity": 25.6245174407959},
+    "bf16": {"tokens": 4682, "mean_nll": 3.249404626949788, "perplexity": 25.77499008178711}
+  },
+  "generation": {
+    "fp32": {"elapsed_seconds": 5.5593, "generated_tokens": 384, "tokens_per_second": 69.074},
+    "tf32": {"elapsed_seconds": 5.3371, "generated_tokens": 384, "tokens_per_second": 71.949, "prompts": 12, "prompts_diverged": 0, "exact_continuation_agreement": 1.0, "token_agreement": 1.0, "median_first_divergence_token": null},
+    "bf16": {"elapsed_seconds": 6.5452, "generated_tokens": 384, "tokens_per_second": 58.669, "prompts": 12, "prompts_diverged": 8, "exact_continuation_agreement": 0.3333333333, "token_agreement": 0.6223958333, "median_first_divergence_token": 15},
+    "bf16_selective_head_tau_0.02": {"threshold": 0.02, "elapsed_seconds": 6.676, "generated_tokens": 384, "tokens_per_second": 57.522, "fallbacks": 17, "head_positions": 384, "fallback_fraction": 0.0442708333, "prompts": 12, "prompts_diverged": 7, "exact_continuation_agreement": 0.4166666667, "token_agreement": 0.7447916667, "median_first_divergence_token": 23},
+    "bf16_selective_head_tau_0.05": {"threshold": 0.05, "elapsed_seconds": 6.574, "generated_tokens": 384, "tokens_per_second": 58.408, "fallbacks": 17, "head_positions": 384, "fallback_fraction": 0.0442708333, "prompts": 12, "prompts_diverged": 7, "exact_continuation_agreement": 0.4166666667, "token_agreement": 0.7447916667, "median_first_divergence_token": 23},
+    "bf16_selective_head_tau_0.1": {"threshold": 0.1, "elapsed_seconds": 6.591, "generated_tokens": 384, "tokens_per_second": 58.262, "fallbacks": 23, "head_positions": 384, "fallback_fraction": 0.0598958333, "prompts": 12, "prompts_diverged": 7, "exact_continuation_agreement": 0.4166666667, "token_agreement": 0.7447916667, "median_first_divergence_token": 23}
+  },
+  "interpretation": "On this small sample, selective FP32 lm_head recomputation at 4.43% of positions raised token agreement by 12.24 percentage points over BF16, while exact continuation agreement remained 5/12 and decode time did not improve. This does not establish generality or a production optimization.",
+  "timing_caveat": "Single short serial eager-attention measurement per arm; no warmup/repeat protocol. Tokens per second is provisional and not comparable as a robust throughput benchmark.",
+  "artifact_scope": "Aggregate measurements only. Original per-token logits and full raw run file are not included."
+}
