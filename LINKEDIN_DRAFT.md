@@ -1,21 +1,22 @@
-# LinkedIn draft
+# LinkedIn draft: A tiny precision fallback, measured end to end
 
-**A precision change can leave benchmark accuracy untouched while changing exactly the decisions closest to the boundary.**
+Can a model spend FP32 compute only where BF16 is least certain?
 
-I tested this on an NVIDIA H100 with 12 matched training seeds. For each seed, I held the dataset, initial weights, and minibatch order fixed, then trained the same small classifier in strict FP32, TF32, and BF16 for 500 steps.
+I ran a small H100 pilot to find out.
 
-On the ordinary held-out set, mean accuracy was 99.62% in every mode. Median prediction disagreement with FP32 was zero.
+I compared FP32, TF32, BF16, and a simple selective scheme on Qwen2.5-0.5B. The selective version kept the transformer body in BF16, then recomputed the vocabulary head in FP32 when the BF16 gap between the top two logits was at most a threshold.
 
-Then I evaluated a deliberately boundary-dense stress set. BF16 disagreed with the paired FP32 model on 206 of 406 examples whose FP32 logit margin was below 0.005. For margins above 0.1, it disagreed on 288 of 608,518 examples. TF32 showed a smaller effect: 104 of 406 flips in the lowest-margin band, and none above 0.025.
+On 12 short WikiText prompts, plain BF16 matched the FP32 greedy output token by token 62.24% of the time. With a threshold of 0.02, the FP32 head ran at 17 of 384 generated positions. Token agreement rose to 74.48%.
 
-The useful engineering point is not that BF16 is unsafe. This is one synthetic task, and the stress set intentionally over-samples a constructed boundary. These rates are not production error estimates.
+But the result has a catch: only 5 of 12 full continuations exactly matched FP32, and this implementation was slower than plain BF16 in the short timing run. A few corrected decisions do not undo the downstream effects of an already-diverged autoregressive prefix. The BF16 body also remained unchanged.
 
-The point is that aggregate accuracy can hide *where* numerical changes move decisions. For a precision change, I would now report prediction disagreement by reference-margin band and include a boundary-focused evaluation slice alongside accuracy and loss.
+That is the useful finding for me: *a precision fallback can improve local token agreement without recovering sequence-level agreement or improving latency.* We need to measure both. A promising per-token metric is not enough to claim a serving optimization.
 
-I built a small reproducible benchmark and an analyzer that checks matched seeds, input hashes, parameter drift, logit drift, and margin-conditioned flips. The experiment protocol and limitations are public here:
+This is an exploratory pilot, not a production result. It used one 0.5B model, 48 WikiText examples for scoring, 12 prompts for generation, one H100, and one short timing per mode. The throughput numbers are not robust benchmarks, and the threshold may not transfer to another model.
 
+I published the code, aggregate measurements, and limitations here:
 https://github.com/haiyashah/gpu-repro-envelope
 
-Next I want to run the same audit on a real model and compare GPU architectures. The current result is a pilot, not a claim that this behavior generalizes.
+Next step: repeat across more prompts and models, longer sequences, batched serving, and warmed-up timing trials. Then test whether a calibrated fallback can improve task quality without adding end-to-end latency.
 
-#MachineLearningSystems #GPUComputing #AIInfrastructure #Reproducibility
+#LLMInference #AIInfrastructure #GPUComputing #MachineLearningSystems
