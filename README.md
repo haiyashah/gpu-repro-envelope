@@ -1,4 +1,8 @@
-# Same Seed, Different Trajectory?
+# GPU and LLM Systems Experiments
+
+This repository collects small, reproducible systems experiments. It contains measured GPU pilots, CPU reference models, and prototypes. These are separate projects, and none is presented as a breakthrough or production-ready optimization.
+
+Start with [the project index](PROJECTS.md) for scope and evidence status.
 
 ## A controlled test of cross-GPU training reproducibility
 
@@ -10,17 +14,24 @@ The scope is deliberately small: a synthetic nonlinear classification task and a
 
 ## Current status
 
-This repository now contains two separate single-GPU pilots, not a cross-GPU result.
+This repository contains single-GPU pilots, not a cross-GPU result.
 
-- On an A40, three fresh processes trained the same seed-7 FP32 workload for 500 steps. Their final parameter SHA-256 matched, and each reached 99.3164% test accuracy and 0.0149633 test loss. See [the A40 pilot record](PILOT_RESULTS.md).
+- On an A40, three fresh processes trained the same seed-7 FP32 workload for 500 steps. Their final parameter SHA-256 matched, and each reached 99.3164% test accuracy and 0.0149633 test loss. See [the A40 pilot record](experiments/PILOT_RESULTS.md).
 - On an H100, 12 matched seeds were trained for 500 steps in FP32, TF32, and BF16. Mean ordinary test accuracy was 99.62% in all modes, while disagreements on an intentionally boundary-dense stress set were concentrated among low-FP32-margin examples. See the [H100 result report](H100_PRECISION_FRONTIER_REPORT.md), [machine-readable summary](H100_PRECISION_FRONTIER_SUMMARY.json), and [fixed protocol](experiments/PRECISION_FRONTIER_PROTOCOL.md).
+- A separate H100 inference pilot evaluated `Qwen/Qwen2.5-0.5B` on 48 WikiText examples and 12 short greedy continuations. Selective FP32 recomputation of the vocabulary head at 17/384 positions raised token agreement from 62.24% to 74.48% on this sample, but exact continuation agreement remained 5/12 and the short timing did not show a speedup. See the [pilot report](experiments/H100_QWEN_PRECISION_PILOT.md), [aggregate result record](experiments/H100_QWEN_PRECISION_RESULTS.json), and [benchmark script](bench/llm_precision_audit.py).
 
 The H100 result is descriptive for one synthetic task. Its stress set deliberately oversamples a constructed boundary, so its disagreement rates are not production error estimates. Existing work studies numerical sensitivity and precision-related output divergence; this repository does not claim a new phenomenon or an established literature gap.
+
+The Qwen inference pilot is also exploratory: one model, one GPU, a small text sample, and one short decode timing per mode. It does not establish a production optimization or generalize to other models or serving systems.
+
+## Multimodal cache identity guard
+
+`src/mm_cache_guard.py` provides ingress-side primitives for tenant-scoped prefix-cache salts and content-bound multimodal IDs. It distinguishes same-length media payloads even when a client reuses an ID. Nine focused CPU tests and the full 35-test repository suite pass; two local HMAC-SHA256 benchmark runs measured 4.93–5.15 ms for an 8 MiB payload. It is not integrated into vLLM and needs an end-to-end GPU test before making serving-performance claims. See the [scope and results](experiments/MM_CACHE_IDENTITY_GUARD.md).
 
 ## Capture an environment
 
 ```bash
-python src/fingerprint.py capture env.json
+python3 src/fingerprint.py capture env.json
 ```
 
 The fingerprint records GPU/driver data from `nvidia-smi`, CUDA compiler information, selected package versions, container tooling, and a short allowlist of CUDA-related environment variables. It intentionally does not dump the full process environment, which can contain credentials.
@@ -28,14 +39,14 @@ The fingerprint records GPU/driver data from `nvidia-smi`, CUDA compiler informa
 Compare captures:
 
 ```bash
-python src/fingerprint.py diff baseline.json replay.json
+python3 src/fingerprint.py diff baseline.json replay.json
 ```
 
 ## Run a training trial
 
 ```bash
-python bench/train_path.py --steps 500 --seed 7 --output runs/gpu-seed7-r1.json
-python bench/aggregate.py runs --output runs/aggregate.json
+python3 bench/train_path.py --steps 500 --seed 7 --output runs/gpu-seed7-r1.json
+python3 bench/aggregate.py runs --output runs/aggregate.json
 ```
 
 The training script writes a JSON record and a `.pt` checkpoint file with environment details and checkpoint metrics. Each run has a content hash for its fixed CPU-generated dataset and initial weights. It does not download data. The aggregate script compares every matched pair and keeps same-GPU controls separate from cross-GPU pairs.
@@ -61,9 +72,3 @@ When algorithm-level nondeterminism is disabled, does moving a fixed training pr
 ## Scope limits
 
 A small pilot can establish reproducible examples and estimate feasibility. It cannot establish how often GPU training results change in the wider literature. Divergent weights alone do not mean meaningful model behavior changed; prediction agreement and task metrics are reported separately.
-  
-
-
-## Additional pilot: pretrained LLM inference (Nov 27, 2026)
-
-A separate H100 run measured Qwen2.5-0.5B on 48 WikiText examples and 12 short greedy prompts. Selective FP32 vocabulary-head recomputation at 17/384 token positions increased token agreement with FP32 from 62.24% to 74.48%, but exact continuation agreement remained 5/12 and the short timing showed no speedup. This is an exploratory result, not a production claim. See the [pilot report](experiments/H100_QWEN_PRECISION_PILOT.md), [aggregate results](experiments/H100_QWEN_PRECISION_RESULTS.json), and [benchmark script](llm_precision_audit.py).
